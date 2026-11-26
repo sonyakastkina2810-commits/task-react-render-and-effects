@@ -1,41 +1,40 @@
-import React, { useEffect, useState } from 'react';
+// src/Effects.tsx
+import React, { useState, useEffect } from 'react';
 import { subscribe, unsubscribe } from './resources/API';
 
-interface IProps {
+interface EffectsProps {
     sourceId: string;
 }
 
-interface IState {
-    sourceId: string;
-    message: number | string;
-}
-
-export function Effects({ sourceId }: IProps) {
-    const [state, setState] = useState<IState>({ sourceId, message: -1 });
+export const Effects: React.FC<EffectsProps> = ({ sourceId }) => {
+    // Последнее сообщение. При смене источника сбрасываем в -1
+    const [lastMessage, setLastMessage] = useState<number | string>(-1);
 
     useEffect(() => {
-        // callback создаётся внутри эффекта, чтобы для unsubscribe
-        // использовалась та же самая ссылка, что и для subscribe
+        // При смене sourceId считаем, что сообщений ещё не было
+        setLastMessage(-1);
+
+        // Важно: callback должен быть одной и той же функцией
+        // и для subscribe, и для unsubscribe
         const callback = (message: number | string) => {
-            setState({ sourceId, message });
+            setLastMessage(message);
         };
 
         subscribe(sourceId, callback);
 
+        // Cleanup — обязательно отписываемся
         return () => {
             unsubscribe(sourceId, callback);
         };
     }, [sourceId]);
 
-    // После смены источника сообщений от него ещё не было, поэтому -1.
-    // Сравнение с sourceId не даёт на один рендер показать старое сообщение.
-    const message = state.sourceId === sourceId ? state.message : -1;
-
+    // Формат вывода: <Название>: <последнее_сообщение>
+    // В большинстве шаблонов этого задания название источника = sourceId
     return (
         <div>
-            {sourceId}: {message}
+            {sourceId}: {lastMessage}
         </div>
     );
-}
+};
 
 export default Effects;
